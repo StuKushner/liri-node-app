@@ -119,14 +119,14 @@ function doIt() {
 		if (error) {
 			return console.log(error);
 		} else {
-			var dataArg = data.split(",");
+			var randomData = data.split(",");
 
-			if (dataArg[0] === 'my-tweets') {
+			if (randomData[0] === 'my-tweets') {
 				twitter();
-			} else if (dataArg[0] === 'spotify-this-song') {
-				spotify(dataArg[1]);
-			} else if (dataArg[0] === 'movie-this') {
-				movie(dataArg[1]);
+			} else if (randomData[0] === 'spotify-this-song') {
+				spotify(randomData[1]);
+			} else if (randomData[0] === 'movie-this') {
+				movie(randomData[1]);
 			}
 		}
 	});
