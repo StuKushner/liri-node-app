@@ -14,28 +14,27 @@ if (process.argv[4]) {
 	};
 };
 
-function userCommand(cmd) {
-	switch (cmd) {
-		case "my-tweets":
-		twitter();
-		break;
+switch (command) {
+	case "my-tweets":
+	twitter();
+	break;
 
-		case "spotify-this-song":
-		spotify();
-		break;
+	case "spotify-this-song":
+	spotify();
+	break;
 
-		case "movie-this":
-		movie();
-		break;
+	case "movie-this":
+	movie();
+	break;
 
-		case "do-what-it-says":
-		doIt();
-		break;
+	case "do-what-it-says":
+	doIt();
+	break;
 
-		default:
-		console.log("I'm sorry, but this input is invalid");
-	};
+	default:
+	console.log("I'm sorry, but this input is invalid");
 };
+
 
 function twitter() {
 	var Twitter = require('twitter');
@@ -58,7 +57,7 @@ function twitter() {
 	});
 }
 
-function spotify() {
+function spotify(title) {
 	if (title) {
 		var Spotify = require("node-spotify-api");
 
@@ -90,7 +89,7 @@ function spotify() {
 	}
 };
 
-function movie() {
+function movie(title) {
 	var request = require("request");
 
 	if (!title) {
@@ -119,8 +118,16 @@ function doIt() {
 	fs.readFile("./random.txt", "utf8", function(error, data) {
 		if (error) {
 			return console.log(error);
+		} else {
+			var dataArg = data.split(",");
+
+			if (dataArg[0] === 'my-tweets') {
+				twitter();
+			} else if (dataArg[0] === 'spotify-this-song') {
+				spotify(dataArg[1]);
+			} else if (dataArg[0] === 'movie-this') {
+				movie(dataArg[1]);
+			}
 		}
-		console.log(data);
 	});
-};
-userCommand(command);
+}
