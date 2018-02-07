@@ -1,133 +1,177 @@
+// ===========================
+// DEPENDENCIES
+// ===========================
+
+// Read and set environment variables
+require("dotenv").config();
+
+// Import Twitter NPM Package
+var Twitter = require('twitter');
+
+// Import Spotify NPM Package
+var Spotify = require("node-spotify-api");
+
+// Import keys
+var keys = require("./keys");
+
+// Import request npm package
+var request = require("request");
+
+// Import fs for reading and writing
 var fs = require("fs");
 
-var command = process.argv[2];
-var title = process.argv[3];
+// Initialize Spotify API client using the client ID and secret
+var spotify = new Spotify(keys.spotify);
 
-if (process.argv[4]) {
-	title = "";
-	var input = process.argv.slice(3);
-	for (var i = 0; i < input.length; i++) {
-		if (i > 0) {
-			title = title + " ";
-		}
-		title = title + input[i];
-	};
-};
+// ============================
+// FUNCTIONS
+// ============================
 
-switch (command) {
-	case "my-tweets":
-	twitter();
-	break;
-
-	case "spotify-this-song":
-	spotify();
-	break;
-
-	case "movie-this":
-	movie();
-	break;
-
-	case "do-what-it-says":
-	doIt();
-	break;
-
-	default:
-	console.log("I'm sorry, but this input is invalid");
-};
-
-
-function twitter() {
-	var Twitter = require('twitter');
-
-	var keys = require("./keys.js");
-
-	var T = new Twitter(keys);
-	var parameters = { screen_name: 'ThisismeStuart', count: 20 }
-	T.get('statuses/user_timeline', parameters, function(error, tweets, response) {
-		if (!error) {
-			for (var i = 0; i < tweets.length; i++) {
-				console.log("Tweet Created:");
-				console.log(tweets[i].created_at);
-				console.log("");
-				console.log("Tweet:");
-				console.log(tweets[i].text);
-				console.log("----------------------------");
-			}
-		}
-	});
-}
-
-function spotify(title) {
-	if (title) {
-		var Spotify = require("node-spotify-api");
-
-	var spotify = new Spotify({
-		id: "24e5a4dc948b43ef908769053d1b1e83",
-		secret: "7145a9013c9043afabdca615a17f0c77"
-	});
-
-	spotify.search({ type: "track", query: title }, function(err, data){
+// Writes to the log.txt file
+var writeToLog = function(data) {
+	fs.appendFile("log.txt", JSON.stringify(data) + "\n", function(err){
 		if (err) {
-			return console.log("Error occurred: " + err);
+			return console.log(err);
 		}
-		for (var i = 0; i < data.tracks.items.length; i++) {
-			console.log("-----------------------------------------------------");
-			console.log("Artist Name: " + data.tracks.items[i].artists[0].name);
-			console.log("Song Name: " + data.tracks.items[i].name);
-			console.log("Preview Link: " + data.tracks.items[i].external_urls.spotify);
-			console.log("Album: " + data.tracks.items[i].album.name);
-			console.log("-----------------------------------------------------");
-		}
+		console.log("log.txt was updated!");
 	});
-	} else {
-		console.log("-----------------------------------------------------");
-		console.log("Artist: Ace of Base");
-		console.log("Song Name: The Sign");
-		console.log("Preview Link: https://play.spotify.com/track/3DYVWvPh3kGwPasp7yjahc?play=true&utm_source=open.spotify.com&utm_medium=open");
-		console.log("Album: The Sign");
-		console.log("-----------------------------------------------------");
-	}
 };
 
-function movie(title) {
-	var request = require("request");
+// This is a helper function that gets the artist's name
+var getArtistNames = function(artist) {
+	return artist.name;
+};
 
-	if (!title) {
-		title = "Mr+Nobody";
+// This function runs a Spotify search
+var getMeSpotify = function(songName) {
+	if (songName === undefined) {
+		songName = "The Sign";
+	}
+
+	spotify.search(
+		{
+			type: "track",
+			query: songName
+		},
+		function (err, data) {
+			if (err) {
+				console.log("Error occurred: " + err);
+				return;
+			}
+
+			var songs = data.tracks.items;
+			var data = [];
+
+			for (var i = 0; i < songs.length; i++) {
+				data.push({
+					"artist(s)": songs[i].artists.map(getArtistNames),
+					"song name": songs[i].name,
+					"preview song": songs[i].preview_url,
+					"albums": songs[i].album.name
+				});
+			}
+
+		console.log(data);
+		writeToLog(data);
+	});
+};
+
+// This function runs a Twitter search
+var getMyTweets = function() {
+	var client = new Twitter(keys.twitter);
+
+	var params = {
+		screen_name: "ThisismeStuart"
+	};
+	client.get('statuses/user_timeline', params, function(error, tweets, response) {
+		if (!error) {
+			var data = [];
+
+			for (var i = 0; i < tweets.length; i++) {
+				data.push({
+					created_at: tweets[i].created_at,
+					text: tweets[i].text
+				});
+			}
+
+			console.log(data);
+			writeToLog(data);
+		}
+	});
+};
+
+// This function runs a movie search
+var getMyMovie = function(title) {
+	if (title === undefined) {
+		title = "Mr Nobody";
 	}
 
 	var queryURL = "http://www.omdbapi.com/?t=" + title + "&y=&plot=short&apikey=trilogy";
 
 	request(queryURL, function(error, response, body) {
 		if (!error && response.statusCode === 200) {
-			console.log("-----------------------------------------------------");
-			console.log("Title: " + JSON.parse(body).Title);
-			console.log("Release Year: " + JSON.parse(body).Year);
-			console.log("IMDB Rating: " + JSON.parse(body).Ratings[0].Value);
-			console.log("Rotten Tomatoes Rating: " + JSON.parse(body).Ratings[1].Value);
-			console.log("Produced In: " + JSON.parse(body).Country);
-			console.log("Language: " + JSON.parse(body).Language);
-			console.log("Plot: " + JSON.parse(body).Plot);
-			console.log("Actors: " + JSON.parse(body).Actors);
-			console.log("-----------------------------------------------------");
+			var jsonData = JSON.parse(body);
+
+			var data = {
+				"Title:": jsonData.Title,
+				"Year:": jsonData.Year,
+				"Rated:": jsonData.Rated,
+				"IMDB Rating:": jsonData.imdbRated,
+				"Country:": jsonData.Country,
+				"Language:": jsonData.Language,
+				"Plot:": jsonData.Plot,
+				"Actors:": jsonData.Actors,
+				"Rotten Tomatoes URL:": jsonData.tomatoURL
+			};
+
+			console.log(data);
+			writeToLog(data);
 		}
 	});
 };
 
-function doIt() {
-	fs.readFile("./random.txt", "utf8", function(error, data) {
-		if (error) {
-			return console.log(error);
-		} else {
-			var randomData = data.split(",");
+// This function runs a command based on the text file
+var doWhatItSays = function() {
+	fs.readFile("random.txt", "utf8", function(error, data) {
+		console.log(data);
 
-			if (randomData[0] === 'my-tweets') {
-				twitter();
-			} else if (randomData[0] === 'spotify-this-song') {
-				spotify(randomData[1]);
-			} else if (randomData[0] === 'movie-this') {
-				movie(randomData[1]);
-			}
+		var dataArr = data.split(",");
+
+		if (dataArr.length === 2) {
+			pick(dataArr[0], dataArr[1]);
+		}
+		else if (dataArr.length === 1) {
+			pick(dataArr[0]);
 		}
 	});
-}
+};
+
+// This function determines which command is executed
+var pick = function(command, functionData) {
+	switch (command) {
+		case "my-tweets":
+			getMyTweets();
+			break;
+		case "spotify-this-song":
+			getMeSpotify(functionData);
+			break;
+		case "movie-this":
+			getMyMovie(functionData);
+			break;
+		case "do-what-it-says":
+			doWhatItSays();
+			break;
+		default:
+			console.log("LIRI doesn't know that");	
+	}	
+};
+
+// This function takes in command arguments and executes the correct function
+var runThis = function(argOne, argTwo) {
+	pick(argOne, argTwo);
+};
+
+// ============================
+// MAIN PROCESS
+// ============================
+runThis(process.argv[2], process.argv[3]);

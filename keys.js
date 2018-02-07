@@ -1,10 +1,13 @@
-console.log('this is loaded');
+console.log('Keys loaded');
 
-var twitterKeys = {
-  consumer_key: '3W7q05tFZoDmQW08Ne9W5pKUz',
-  consumer_secret: 'dTyjjfZY0kTpMNDPWZed3wjdeFiqnbko7G52Ae8JtGTWf4jlLd',
-  access_token_key: '943129504125505536-ZsCbcVdKrqjG5m7NKTwfZuiIpf8VgW7',
-  access_token_secret: '0ooYRIElZDNWmp7XSiTJvR52YTvR1s040A2UMasPB6Buk',
-}
+exports.twitter = {
+	consumer_key: process.env.TWITTER_CONSUMER_KEY,
+	consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+	access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
+	access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+};
 
-module.exports = twitterKeys;
+exports.spotify = {
+	id: process.env.SPOTIFY_ID,
+	secret: process.env.SPOTIFY_SECRET
+};
